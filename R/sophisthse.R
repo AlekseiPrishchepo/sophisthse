@@ -144,8 +144,8 @@ get_stat_hse_info_vector <- function(series.name = "IP_EA_Q",
                  ".html", sep = "")
   }
 
-  url.html <- RCurl::getURL(url, .encoding = "UTF-8", ...)
-  url.parsed <- XML::htmlTreeParse(url.html)
+  url.filename <- download_url(url)
+  url.parsed <- XML::htmlTreeParse(url.filename)
   url.root <- XML::xmlRoot(url.parsed)
 
 
@@ -198,10 +198,10 @@ sophisthse0 <- function(series.name = "IP_EA_Q", ...) {
   # download main data
   url <- paste("http://sophist.hse.ru/hse/1/tables/", series.name,
                ".htm", sep = "")
-  url.html <- RCurl::getURL(url, .encoding = "UTF-8", ...)
+  url.filename <- download_url(url)
 
   # get main table
-  tables <- XML::readHTMLTable(url.html)
+  tables <- XML::readHTMLTable(url.filename)
   df <- tibble::as_tibble(tables[[1]])
 
 
@@ -211,7 +211,7 @@ sophisthse0 <- function(series.name = "IP_EA_Q", ...) {
 
 
   # html parse
-  url.parsed <- XML::htmlTreeParse(url.html)
+  url.parsed <- XML::htmlTreeParse(url.filename)
   url.root <- XML::xmlRoot(url.parsed)
 
 
@@ -443,3 +443,34 @@ set_variable_labels <- function(df, labels) {
   return(df)
 }
 
+
+#' Downloads and saves URL contents to file
+#' 
+#' Downloads and saves URL contents to file
+#' 
+#' Downloads and saves URL contents to file (binary). If no file name provided, 
+#' uses temporary file name.
+#'
+#' @param url URL to download
+#' @param filename file name (optional, filled with tempfile() if not provided)
+#' @return name of file where content is stored
+#' @export
+#' @examples
+#' content <- download_url(url)
+download_url <- function(url, filename) {
+  # If no file name provided, get temporary one
+  if (missing(filename)) {
+    filename <- tempfile()
+  }
+  
+  # Create a connection to write binary data
+  f <- RCurl::CFILE(filename, mode = "wb")
+  
+  # Download the content and write it to the file
+  RCurl::curlPerform(url = url, writedata = f@ref)
+  
+  # Close the connection
+  RCurl::close(f)
+  
+  return(filename)
+}
